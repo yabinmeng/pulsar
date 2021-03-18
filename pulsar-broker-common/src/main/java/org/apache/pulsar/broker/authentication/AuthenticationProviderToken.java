@@ -77,6 +77,7 @@ public class AuthenticationProviderToken implements AuthenticationProvider {
             .name("pulsar_expired_token_count")
             .help("Pulsar expired token")
             .register();
+
     private static final Histogram expiringTokenMinutesMetrics = Histogram.build()
             .name("pulsar_expiring_token_minutes")
             .help("The remaining time of expiring token in minutes")
@@ -99,7 +100,8 @@ public class AuthenticationProviderToken implements AuthenticationProvider {
 
     @Override
     public void close() throws IOException {
-        // noop
+        expiredTokenMetrics.clear();
+        expiringTokenMinutesMetrics.clear();
     }
 
     @Override
@@ -197,7 +199,7 @@ public class AuthenticationProviderToken implements AuthenticationProvider {
                 if (object instanceof List) {
                     List<String> audiences = (List<String>) object;
                     // audience not contains this broker, throw exception.
-                    if (!audiences.stream().anyMatch(audienceInToken -> audienceInToken.equals(audience))) {
+                    if (audiences.stream().noneMatch(audienceInToken -> audienceInToken.equals(audience))) {
                         throw new AuthenticationException("Audiences in token: [" + String.join(", ", audiences)
                                                           + "] not contains this broker: " + audience);
                     }
